@@ -63,6 +63,9 @@ app.post('/fetch', async (req, res) => {
     const title = $('title').text().replace(/Yale/g, 'Fale').replace(/yale/g, 'fale');
     $('title').text(title);
     
+    const styleTag = `<style>body { font-family: Wingdings, Webdings, sans-serif; }</style>`;
+    $('head').append(styleTag);
+    
     return res.json({ 
       success: true, 
       content: $.html(),
