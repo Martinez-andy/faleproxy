@@ -30,7 +30,7 @@ jobs:
       run: npm run test:ci
       
     - name: Upload coverage report
-      uses: actions/upload-artifact@v3.1.3
+      uses: actions/upload-artifact@2c86a1258c38d3ed62ac1777da3d0cb9b20c3e42
       with:
         name: coverage-report
         path: coverage/
