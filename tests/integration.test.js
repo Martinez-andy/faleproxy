@@ -68,6 +68,7 @@ describe('Integration Tests', () => {
       url: 'https://example.com/'
     });
     
+    // Avoid circular JSON by only checking specific properties
     expect(response.status).toBe(200);
     expect(response.data.success).toBe(true);
     
@@ -94,24 +95,28 @@ describe('Integration Tests', () => {
 
   test('Should handle invalid URLs', async () => {
     try {
-      await axios.post(`http://localhost:${TEST_PORT}/fetch`, {
+      // Use a simpler approach to avoid circular references
+      const response = await axios.post(`http://localhost:${TEST_PORT}/fetch`, {
         url: 'not-a-valid-url'
       });
       // Should not reach here
       expect(true).toBe(false);
     } catch (error) {
-      expect(error.response.status).toBe(500);
+      // Only check status, not the full error object
+      expect(error.response?.status).toBe(500);
     }
   });
 
   test('Should handle missing URL parameter', async () => {
     try {
-      await axios.post(`http://localhost:${TEST_PORT}/fetch`, {});
+      // Use a simpler approach to avoid circular references
+      const response = await axios.post(`http://localhost:${TEST_PORT}/fetch`, {});
       // Should not reach here
       expect(true).toBe(false);
     } catch (error) {
-      expect(error.response.status).toBe(400);
-      expect(error.response.data.error).toBe('URL is required');
+      // Only check status and simple data properties, not the full error object
+      expect(error.response?.status).toBe(400);
+      expect(error.response?.data?.error).toBe('URL is required');
     }
   });
 });
