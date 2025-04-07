@@ -11,13 +11,16 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
 
+// Create a router for the routes
+const router = express.Router();
+
 // Route to serve the main page
-app.get('/', (req, res) => {
+router.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
 // API endpoint to fetch and modify content
-app.post('/fetch', async (req, res) => {
+router.post('/fetch', async (req, res) => {
   try {
     const { url } = req.body;
     
@@ -89,7 +92,15 @@ app.post('/fetch', async (req, res) => {
   }
 });
 
+// Apply the router to the app
+app.use('/', router);
+
 // Start the server
-app.listen(PORT, () => {
-  console.log(`Faleproxy server running at http://localhost:${PORT}`);
-});
+if (require.main === module) {
+  app.listen(PORT, () => {
+    console.log(`Faleproxy server running at http://localhost:${PORT}`);
+  });
+}
+
+// Export the router for testing
+module.exports = router;
