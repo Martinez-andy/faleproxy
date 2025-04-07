@@ -1,20 +1,18 @@
 const express = require('express');
-const axios = require('axios');
-const cheerio = require('cheerio');
 const path = require('path');
+const fetch = require('node-fetch');
+const cheerio = require('cheerio');
 
+// Create Express app
 const app = express();
-const PORT = 3001;
+const router = express.Router();
 
-// Middleware to parse request bodies
+// Middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Create a router for the routes
-const router = express.Router();
-
-// Route to serve the main page
+// Home route
 router.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
@@ -54,21 +52,23 @@ router.post('/fetch', async (req, res) => {
     if (!url) {
       return res.status(400).json({ error: 'URL is required' });
     }
-
+    
     // Fetch the content from the provided URL
-    const response = await axios.get(url);
-    const html = response.data;
-
+    const response = await fetch(url);
+    const html = await response.text();
+    const contentType = response.headers.get('content-type') || '';
+    const isHtml = contentType.includes('text/html');
+    
     // Use cheerio to parse HTML and selectively replace text content, not URLs
     const $ = cheerio.load(html);
     
     let replacementCount = 0;
     
+    
     // Process text nodes in the body
     $('body *').contents().filter(function() {
-      return this.nodeType === 3; // Text nodes only
+      return this.type === 'text';
     }).each(function() {
-      // Replace text content but not in URLs or attributes
       const text = $(this).text();
       // Only perform replacement if 'Yale' or 'yale' is actually present
       if (text.match(/Yale|yale/i)) {
@@ -80,7 +80,7 @@ router.post('/fetch', async (req, res) => {
       }
     });
     
-    // Process title separately
+    // Replace Yale with Fale in the title
     const title = $('title').text();
     // Only replace if Yale is present
     if (title.match(/Yale|yale/i)) {
@@ -90,7 +90,7 @@ router.post('/fetch', async (req, res) => {
     }
     
     return res.json({ 
-      success: true, 
+      success: true,
       content: $.html(),
       title: $('title').text(),
       originalUrl: url,
@@ -107,15 +107,17 @@ router.post('/fetch', async (req, res) => {
 // Apply the router to the app
 app.use('/', router);
 
-// Start the server
+// Start server if not being imported
 if (require.main === module) {
+  const PORT = process.env.PORT || 3001;
   app.listen(PORT, () => {
     console.log(`Faleproxy server running at http://localhost:${PORT}`);
   });
 }
 
-// Export the router and the replaceYaleWithFale function for testing
-module.exports = {
-  router,
-  replaceYaleWithFale
-};
+// Export the app for testing
+module.exports = app;
+
+// Also export the router and replaceYaleWithFale function for testing
+app.router = router;
+app.replaceYaleWithFale = replaceYaleWithFale;
