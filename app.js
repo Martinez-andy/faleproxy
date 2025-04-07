@@ -19,6 +19,33 @@ router.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
+// Function to replace Yale with Fale in text
+function replaceYaleWithFale(text) {
+  if (!text) return { text: '', count: 0 };
+  
+  let count = 0;
+  
+  // Replace Yale with Fale (case-sensitive)
+  let modifiedText = text.replace(/Yale/g, () => {
+    count++;
+    return 'Fale';
+  });
+  
+  // Replace YALE with FALE (all caps)
+  modifiedText = modifiedText.replace(/YALE/g, () => {
+    count++;
+    return 'FALE';
+  });
+  
+  // Replace yale with fale (all lowercase)
+  modifiedText = modifiedText.replace(/yale/g, () => {
+    count++;
+    return 'fale';
+  });
+  
+  return { text: modifiedText, count };
+}
+
 // API endpoint to fetch and modify content
 router.post('/fetch', async (req, res) => {
   try {
@@ -35,20 +62,7 @@ router.post('/fetch', async (req, res) => {
     // Use cheerio to parse HTML and selectively replace text content, not URLs
     const $ = cheerio.load(html);
     
-    // Function to replace text but skip URLs and attributes
-    function replaceYaleWithFale(i, el) {
-      if ($(el).children().length === 0 || $(el).text().trim() !== '') {
-        // Get the HTML content of the element
-        let content = $(el).html();
-        
-        // Only process if it's a text node
-        if (content && $(el).children().length === 0) {
-          // Replace Yale with Fale in text content only
-          content = content.replace(/Yale/g, 'Fale').replace(/yale/g, 'fale');
-          $(el).html(content);
-        }
-      }
-    }
+    let replacementCount = 0;
     
     // Process text nodes in the body
     $('body *').contents().filter(function() {
@@ -58,12 +72,10 @@ router.post('/fetch', async (req, res) => {
       const text = $(this).text();
       // Only perform replacement if 'Yale' or 'yale' is actually present
       if (text.match(/Yale|yale/i)) {
-        // Use case-preserving replacement
-        const newText = text.replace(/YALE/g, 'FALE')
-                           .replace(/Yale/g, 'Fale')
-                           .replace(/yale/g, 'fale');
-        if (text !== newText) {
-          $(this).replaceWith(newText);
+        const result = replaceYaleWithFale(text);
+        if (result.count > 0) {
+          $(this).replaceWith(result.text);
+          replacementCount += result.count;
         }
       }
     });
@@ -72,17 +84,17 @@ router.post('/fetch', async (req, res) => {
     const title = $('title').text();
     // Only replace if Yale is present
     if (title.match(/Yale|yale/i)) {
-      const newTitle = title.replace(/YALE/g, 'FALE')
-                           .replace(/Yale/g, 'Fale')
-                           .replace(/yale/g, 'fale');
-      $('title').text(newTitle);
+      const titleResult = replaceYaleWithFale(title);
+      $('title').text(titleResult.text);
+      replacementCount += titleResult.count;
     }
     
     return res.json({ 
       success: true, 
       content: $.html(),
       title: $('title').text(),
-      originalUrl: url
+      originalUrl: url,
+      replacementCount
     });
   } catch (error) {
     console.error('Error fetching URL:', error.message);
@@ -102,5 +114,8 @@ if (require.main === module) {
   });
 }
 
-// Export the router for testing
-module.exports = router;
+// Export the router and the replaceYaleWithFale function for testing
+module.exports = {
+  router,
+  replaceYaleWithFale
+};

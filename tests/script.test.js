@@ -14,6 +14,7 @@ document.body.innerHTML = `
     <div id="info-bar">
       <span>Original URL: <a id="original-url" href="#"></a></span>
       <span>Page Title: <span id="page-title"></span></span>
+      <span>Replacements: <span id="count-value">0</span></span>
     </div>
     <div id="content-display"></div>
   </div>
@@ -37,6 +38,7 @@ function setupFaleproxyApp() {
   const contentDisplay = document.getElementById('content-display');
   const originalUrlElement = document.getElementById('original-url');
   const pageTitleElement = document.getElementById('page-title');
+  const countElement = document.getElementById('count-value');
 
   function showError(message) {
     errorMessage.textContent = message;
@@ -77,6 +79,7 @@ function setupFaleproxyApp() {
       originalUrlElement.textContent = url;
       originalUrlElement.href = url;
       pageTitleElement.textContent = data.title || 'No title';
+      countElement.textContent = data.replacementCount || 0;
       
       // Display content
       contentDisplay.innerHTML = data.content;
@@ -113,6 +116,7 @@ describe('Frontend Script', () => {
     document.getElementById('result-container').classList.add('hidden');
     document.getElementById('error-message').textContent = '';
     document.getElementById('content-display').innerHTML = '';
+    document.getElementById('count-value').textContent = '0';
     
     // Initialize the app for each test
     app = setupFaleproxyApp();
@@ -224,5 +228,57 @@ describe('Frontend Script', () => {
     const errorMessage = document.getElementById('error-message');
     expect(errorMessage.textContent).toBe('Test error message');
     expect(errorMessage.classList.contains('hidden')).toBe(false);
+  });
+
+  test('should display replacement count when provided in the response', async () => {
+    // Mock successful fetch response with replacement count
+    const mockResponse = {
+      ok: true,
+      json: jest.fn().mockResolvedValue({
+        success: true,
+        content: '<h1>Modified Content</h1>',
+        title: 'Test Title',
+        originalUrl: 'https://example.com',
+        replacementCount: 42
+      })
+    };
+    global.fetch.mockResolvedValue(mockResponse);
+
+    // Set URL input value
+    const urlInput = document.getElementById('url-input');
+    urlInput.value = 'https://example.com';
+
+    // Call the form submit handler directly
+    await app.handleFormSubmit({ preventDefault: jest.fn() });
+
+    // Check if the replacement count is displayed correctly
+    const countElement = document.getElementById('count-value');
+    expect(countElement.textContent).toBe('42');
+  });
+
+  test('should display 0 replacements when count is not provided in the response', async () => {
+    // Mock successful fetch response without replacement count
+    const mockResponse = {
+      ok: true,
+      json: jest.fn().mockResolvedValue({
+        success: true,
+        content: '<h1>Modified Content</h1>',
+        title: 'Test Title',
+        originalUrl: 'https://example.com'
+        // No replacementCount field
+      })
+    };
+    global.fetch.mockResolvedValue(mockResponse);
+
+    // Set URL input value
+    const urlInput = document.getElementById('url-input');
+    urlInput.value = 'https://example.com';
+
+    // Call the form submit handler directly
+    await app.handleFormSubmit({ preventDefault: jest.fn() });
+
+    // Check if the replacement count defaults to 0
+    const countElement = document.getElementById('count-value');
+    expect(countElement.textContent).toBe('0');
   });
 });

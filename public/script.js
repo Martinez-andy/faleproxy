@@ -7,6 +7,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const contentDisplay = document.getElementById('content-display');
     const originalUrlElement = document.getElementById('original-url');
     const pageTitleElement = document.getElementById('page-title');
+    
+    // Add a new element for replacement count
+    const replacementCountElement = document.createElement('span');
+    replacementCountElement.id = 'replacement-count';
+    replacementCountElement.innerHTML = '<strong>Replacements:</strong> <span id="count-value">0</span>';
+    
+    // Get the info bar and append the new element
+    const infoBar = document.querySelector('#info-bar');
+    infoBar.appendChild(replacementCountElement);
 
     urlForm.addEventListener('submit', async (e) => {
         e.preventDefault();
@@ -42,6 +51,9 @@ document.addEventListener('DOMContentLoaded', () => {
             originalUrlElement.textContent = url;
             originalUrlElement.href = url;
             pageTitleElement.textContent = data.title || 'No title';
+            
+            // Update the replacement count
+            document.getElementById('count-value').textContent = data.replacementCount || 0;
             
             // Create a sandboxed iframe to display the content
             const iframe = document.createElement('iframe');
