@@ -53,20 +53,32 @@ app.post('/fetch', async (req, res) => {
     }).each(function() {
       // Replace text content but not in URLs or attributes
       const text = $(this).text();
-      const newText = text.replace(/Yale/g, 'Fale').replace(/yale/g, 'fale');
-      if (text !== newText) {
-        $(this).replaceWith(newText);
+      // Only perform replacement if 'Yale' or 'yale' is actually present
+      if (text.match(/Yale|yale/i)) {
+        // Use case-preserving replacement
+        const newText = text.replace(/YALE/g, 'FALE')
+                           .replace(/Yale/g, 'Fale')
+                           .replace(/yale/g, 'fale');
+        if (text !== newText) {
+          $(this).replaceWith(newText);
+        }
       }
     });
     
     // Process title separately
-    const title = $('title').text().replace(/Yale/g, 'Fale').replace(/yale/g, 'fale');
-    $('title').text(title);
+    const title = $('title').text();
+    // Only replace if Yale is present
+    if (title.match(/Yale|yale/i)) {
+      const newTitle = title.replace(/YALE/g, 'FALE')
+                           .replace(/Yale/g, 'Fale')
+                           .replace(/yale/g, 'fale');
+      $('title').text(newTitle);
+    }
     
     return res.json({ 
       success: true, 
       content: $.html(),
-      title: title,
+      title: $('title').text(),
       originalUrl: url
     });
   } catch (error) {

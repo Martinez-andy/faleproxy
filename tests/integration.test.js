@@ -17,12 +17,28 @@ describe('Integration Tests', () => {
     nock.disableNetConnect();
     nock.enableNetConnect('127.0.0.1');
     
-    // Create a temporary test app file
-    await execAsync('cp app.js app.test.js');
-    await execAsync(`sed -i '' 's/const PORT = 3001/const PORT = ${TEST_PORT}/' app.test.js`);
+    // Create a temporary test app file with proper path
+    await execAsync('cp ./app.js ./app.test.js');
+    
+    // Use platform-independent sed command
+    try {
+      // For macOS
+      await execAsync(`sed -i '' 's/const PORT = 3001/const PORT = ${TEST_PORT}/' ./app.test.js`);
+    } catch (error) {
+      try {
+        // For Linux/Windows
+        await execAsync(`sed -i 's/const PORT = 3001/const PORT = ${TEST_PORT}/' ./app.test.js`);
+      } catch (sedError) {
+        console.error('Error modifying app.test.js:', sedError);
+        // Fallback: manually create the file with the right port
+        const fs = require('fs');
+        const appContent = fs.readFileSync('./app.js', 'utf8');
+        fs.writeFileSync('./app.test.js', appContent.replace('const PORT = 3001', `const PORT = ${TEST_PORT}`));
+      }
+    }
     
     // Start the test server
-    server = require('child_process').spawn('node', ['app.test.js'], {
+    server = require('child_process').spawn('node', ['./app.test.js'], {
       detached: true,
       stdio: 'ignore'
     });
@@ -36,7 +52,7 @@ describe('Integration Tests', () => {
     if (server && server.pid) {
       process.kill(-server.pid);
     }
-    await execAsync('rm app.test.js');
+    await execAsync('rm ./app.test.js');
     nock.cleanAll();
     nock.enableNetConnect();
   });
